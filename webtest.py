@@ -27,11 +27,12 @@ class WebHandler(Resource):
     def render_GET(self, request):
         print "self=%s" % self
         print "request=%s" % dir(request)
-        return page().add(
+        return pui.page('Pui Demo').add(
+            pui.bootstrap(),
             pui.jumbotron().add(
-                pui.heading(3, "python ui demo")
+                pui.heading(3, text="python ui demo")
             )
-        ).html()
+        ).asHtml()
 
 
 class WebRequest(Resource):

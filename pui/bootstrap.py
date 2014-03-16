@@ -33,22 +33,34 @@ class bootstrap(pui.element):
         jquery_js_url = '//code.jquery.com/jquery-1.10.1.min.js'
 
         self.head.append(
-            pui.element('link').attr(
+            pui.element(
+                'link',
                 rel='stylesheet',
                 href=bootstrap_css_url,
                 type='text/css'
             )
         )
 
+        # mobile viewport meta
+        self.head.append(
+            pui.element(
+                'meta',
+                name="viewport",
+                content="width=device-width, initial-scale=1"
+            )
+        )
+
         self.tail.append(
-            pui.element('script').attr(
+            pui.element(
+                'script',
                 src=jquery_js_url,
                 type='text/css'
             )
         )
 
         self.tail.append(
-            pui.element('script').attr(
+            pui.element(
+                'script',
                 src=bootstrap_js_url,
                 type='text/css'
             )

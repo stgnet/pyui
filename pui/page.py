@@ -6,10 +6,9 @@ class page(pui.element):
         generates doctype, html, head, title, meta, body tags
         also loads bootstrap
     """
-    def __init__(self, title='Web Page', meta=[]):
-        pui.element.__init__(self)
+    def __init__(self, title='Web Page', **kwargs):
+        pui.element.__init__(self, 'page', **kwargs)
         self.title = title
-        self.meta = meta
 
     def asHtml(self):
         """
@@ -29,11 +28,11 @@ class page(pui.element):
         # construct page with head and body
         html = pui.element('html').add(
             pui.element('head').add(
-                pui.element('title').add(pui.text(self.title)),
-            ).addList(self.meta).addList(page_head)
+                pui.element('title', text=self.title),
+            ).addList(page_head)
         ).add(
-            body
-        ).addList(page_tail)
+            body.addList(page_tail)
+        )
 
         return '<!DOCTYPE html>' + html.asHtml() + '\n'
 

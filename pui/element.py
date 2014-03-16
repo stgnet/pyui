@@ -5,7 +5,7 @@ indention = '  '
 
 
 class element(object):
-    def __init__(self, tag=None, html=None):
+    def __init__(self, tag=None, **kwargs):
         """
             create an element tag with various properties
             used to construct a nested list of elements
@@ -18,11 +18,21 @@ class element(object):
         self.head = list()  # tags that go in <head>
         self.tail = list()  # usually <script>'s at end of page inside body
         self.contents = list()  # sub content to this element (nested)
-        self.raw_html = html    # html inside this tag
+        self.raw_html = ''      # html inside this tag
 
-    """
-        Note: head/tail only works if outermost object is page()
-    """
+        for key in kwargs:
+            if key is 'html':
+                self.raw_html += kwargs[key]
+            elif key is 'text':
+                self.raw_html += cgi.escape(kwargs[key])
+            else:
+                self.attr(**{key: kwargs[key]})
+
+    def get_id(self):
+        if ('id' not in self.attributes):
+            self.attributes['id'] = "%s" % id(self)
+        return self.attributes['id']
+
     def _get_head(self):
         head = self.head
         for subelement in self.contents:
@@ -63,24 +73,26 @@ class element(object):
         content += ''.join(item.asHtml(level + 1) for item in self.contents)
         indent = indention * level
         tag_attr = self.tag + self._get_attr_str()
+        length = len(indent) + len(tag_attr) + len(content) + len(self.tag)
         if not self.tag:
             html = [content]
         elif content == '' and self.tag not in dont_self_close:
             html = ['\n', indent, '<', tag_attr, ' />']
-        elif len(indent) + len(tag_attr) + len(content) < 70:
+        elif not content.startswith('\n') and length < 75:
             html = ['\n', indent, '<', tag_attr, '>', content,
-                    '<', self.tag, '/>']
+                    '</', self.tag, '>']
         else:
             html = ['\n', indent, '<', tag_attr, '>',
                     content,
-                    '\n', indent, '<', self.tag, '/>']
+                    '\n', indent, '</', self.tag, '>']
         return ''.join(html)
 
     def addList(self, things):
         for thing in things:
             if thing:
                 if not isinstance(thing, element):
-                    thing = element(None, "%s" % thing)
+                    # ad as separate object to retain in supplied order
+                    thing = element(None, html="%s" % thing)
                 self.contents.append(thing)
         return self
 
@@ -89,7 +101,8 @@ class element(object):
 
     def attr(self, **kwargs):
         for key in kwargs:
-            self.attributes[key] = kwargs[key]
+            name = key.replace('_', '-')
+            self.attributes[name] = kwargs[key]
         return self
 
     def style(self, **kwargs):
@@ -143,13 +156,5 @@ class element(object):
     def background(self, color):
         self.style(background=color)
         return self
-
-
-class text(element):
-    def __init__(self, string):
-        """
-            convert string to html entities
-        """
-        element.__init__(self, None, cgi.escape(string))
 
 # vim:sw=4:ts=4:expandtab:textwidth=79
