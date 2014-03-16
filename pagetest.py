@@ -3,6 +3,7 @@
 import pui
 
 print pui.page('Page Name').background('blue').add(
+    pui.bootstrap(),
     pui.element('H1')
 ).asHtml()
 
