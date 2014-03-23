@@ -2,9 +2,14 @@ import cgi
 
 dont_self_close = ['script', 'i', 'iframe', 'div', 'title']
 indention = '  '
+#always_break_before = ['ul', 'li', 'script', 'meta']
+always_break_before = []
 
 
 class element(object):
+    def html_entities(self, string):
+        return cgi.escape(string)
+
     def __init__(self, tag=None, **kwargs):
         """
             create an element tag with various properties
@@ -17,20 +22,26 @@ class element(object):
         self.classes = []
         self.head = list()  # tags that go in <head>
         self.tail = list()  # usually <script>'s at end of page inside body
+        self.ready = dict()  # document ready scripts (named for collision)
         self.contents = list()  # sub content to this element (nested)
+        self.navmenu = list()   # nested navigation menus
         self.raw_html = ''      # html inside this tag
 
         for key in kwargs:
-            if key is 'html':
+            if not kwargs[key]:
+                continue
+            elif key is 'html':
                 self.raw_html += kwargs[key]
             elif key is 'text':
-                self.raw_html += cgi.escape(kwargs[key])
+                self.raw_html += self.html_entities(kwargs[key])
+            elif key is '_class':
+                self.classes = kwargs[key].split(' ')
             else:
                 self.attr(**{key: kwargs[key]})
 
     def get_id(self):
         if ('id' not in self.attributes):
-            self.attributes['id'] = "%s" % id(self)
+            self.attributes['id'] = "id%s" % id(self)
         return self.attributes['id']
 
     def _get_head(self):
@@ -46,6 +57,17 @@ class element(object):
             for item in subelement._get_tail():
                 tail.append(item)
         return tail
+
+    def _get_ready(self):
+        ready = self.ready
+        for subelement in self.contents:
+            for name, script in subelement._get_ready().iteritems():
+                ready[name] = script
+        # also walk the navmenu
+        for subelement in self.navmenu:
+            for name, script in subelement._get_ready().iteritems():
+                ready[name] = script
+        return ready
 
     def _get_attr_str(self):
         attrib = ''
@@ -69,23 +91,44 @@ class element(object):
             recursively walk element tree and generate
             html document, creating tags along the way
         """
-        content = self.raw_html if self.raw_html else ''
-        content += ''.join(item.asHtml(level + 1) for item in self.contents)
         indent = indention * level
-        tag_attr = self.tag + self._get_attr_str()
-        length = len(indent) + len(tag_attr) + len(content) + len(self.tag)
+        content = self.raw_html if self.raw_html else ''
+        length = len(content)
+        #content += ''.join(item.asHtml(level + 1) for item in self.contents)
+        for item in self.contents:
+            html = item.asHtml(level + 1)
+            if not html.startswith('\n') and html.startswith('<'):
+                if length + len(html) > 70:
+                    html = '\n' + indent + indention + html
+                    length = 0
+            content += html
+            length += len(html)
+
         if not self.tag:
-            html = [content]
-        elif content == '' and self.tag not in dont_self_close:
-            html = ['\n', indent, '<', tag_attr, ' />']
-        elif not content.startswith('\n') and length < 75:
-            html = ['\n', indent, '<', tag_attr, '>', content,
-                    '</', self.tag, '>']
-        else:
-            html = ['\n', indent, '<', tag_attr, '>',
-                    content,
-                    '\n', indent, '</', self.tag, '>']
-        return ''.join(html)
+            return content
+        tag_attr = self.tag + self._get_attr_str()
+
+        if not content and self.tag not in dont_self_close:
+            return ''.join(['<', tag_attr, ' />'])
+
+        if content.startswith('\n'):
+            return ''.join(['\n', indent, '<', tag_attr, '>',
+                            content,
+                            '\n', indent, '</', self.tag, '>'])
+
+        if len(content) + len(indent) > 70:
+            return ''.join(['\n', indent, '<', tag_attr, '>',
+                            '\n', indent, indention, content,
+                            '\n', indent, '</', self.tag, '>'])
+
+        if self.tag in always_break_before:
+            return ''.join(['\n', indent, '<', tag_attr, '>',
+                            content,
+                            '</', self.tag, '>'])
+
+        return ''.join(['<', tag_attr, '>',
+                        content,
+                        '</', self.tag, '>'])
 
     def addList(self, things):
         for thing in things:
@@ -99,8 +142,15 @@ class element(object):
     def add(self, *things):
         return self.addList(things)
 
+    def menu(self, *things):
+        for thing in things:
+            self.navmenu.append(thing)
+        return self
+
     def attr(self, **kwargs):
         for key in kwargs:
+            if key is '_class':
+                raise 'not handled'
             name = key.replace('_', '-')
             self.attributes[name] = kwargs[key]
         return self
@@ -116,6 +166,10 @@ class element(object):
             if name not in self.classes:
                 self.classes.append(name)
         return self
+
+    def addReadyScript(self, **kwargs):
+        for key in kwargs:
+            self.ready[key] = kwargs[key]
 
     def center(self):
         self.addClass('pagination-centered')

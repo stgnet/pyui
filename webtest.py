@@ -25,8 +25,6 @@ class WebHandler(Resource):
         self.name = name
 
     def render_GET(self, request):
-        print "self=%s" % self
-        print "request=%s" % dir(request)
         return pui.page('Pui Demo').add(
             pui.bootstrap(),
             pui.jumbotron().add(
@@ -44,7 +42,7 @@ class WebRequest(Resource):
         return WebHandler(name)
 
 resource = WebRequest()
-resource.putChild("etc", File("/etc"))
+#resource.putChild("etc", File("/etc"))
 factory = Site(resource)
 reactor.listenTCP(8080, factory)
 reactor.run()

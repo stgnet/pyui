@@ -9,6 +9,12 @@ class page(pui.element):
     def __init__(self, title='Web Page', **kwargs):
         pui.element.__init__(self, 'page', **kwargs)
         self.title = title
+        self.head.append(
+            pui.element(
+                'meta',
+                charset='utf-8'
+            )
+        )
 
     def asHtml(self):
         """
@@ -19,6 +25,21 @@ class page(pui.element):
         # get the head/tail before contents duplicated
         page_head = self._get_head()
         page_tail = self._get_tail()
+        page_ready = self._get_ready()
+
+        # construct ready script section
+        ready_script = None
+        if page_ready:
+            scripts = '\n'.join(page_ready.itervalues())
+            ready_script_func = '\n'.join([
+                "$(document).ready(function(){",
+                scripts,
+                "});"
+            ])
+            ready_script = pui.element(
+                'script',
+                type='text/javascript',
+                html=ready_script_func)
 
         # create fake body element
         body = pui.element('body')
@@ -31,7 +52,7 @@ class page(pui.element):
                 pui.element('title', text=self.title),
             ).addList(page_head)
         ).add(
-            body.addList(page_tail)
+            body.addList(page_tail).add(ready_script)
         )
 
         return '<!DOCTYPE html>' + html.asHtml() + '\n'
