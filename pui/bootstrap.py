@@ -54,7 +54,6 @@ class bootstrap(pui.element):
             pui.element(
                 'script',
                 src=jquery_js_url,
-                type='text/css'
             )
         )
 
@@ -62,7 +61,6 @@ class bootstrap(pui.element):
             pui.element(
                 'script',
                 src=bootstrap_js_url,
-                type='text/css'
             )
         )
 
