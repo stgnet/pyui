@@ -34,6 +34,7 @@ class puiBorg:
             although much easier to manage code with
             it broken out into individual files
         """
+        self.__name__ = "puiBorg"
         script_dir = os.path.dirname(os.path.abspath(__file__))
         sys.path.append(script_dir)
         for pyfile in glob.glob(script_dir + '/*.py'):
