@@ -1,4 +1,4 @@
-pui
+pyui
 ===
 
 Python User Interface
